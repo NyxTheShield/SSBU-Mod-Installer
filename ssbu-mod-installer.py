@@ -18,7 +18,8 @@ def _isValidHex(s):
         return False
 
 def getFileBaseName(path):
-    return os.path.splitext(os.path.split(path)[-1])[0]
+    filename = os.path.split(path)[-1]
+    return filename.split('.')[0]
 
 def installMod(archive, modFilename):
     offset = int(getFileBaseName(modFilename), 16)
@@ -27,11 +28,24 @@ def installMod(archive, modFilename):
         modContents = f.read()
         modSize = len(modContents)
         backup = archive.read(modSize)
-        with open(modFilename + '.backup', 'wb') as f_backup:
-            f_backup.write(backup)
+        if not os.path.exists(modFilename + '.backup'):
+            with open(modFilename + '.backup', 'wb') as f_backup:
+                f_backup.write(backup)
         archive.seek(offset)
         archive.write(modContents)
     print("Mod '{}' successfully installed".format(modFilename))
+
+def uninstallMod(archive, modFilename):
+    offset = int(getFileBaseName(modFilename), 16)
+    archive.seek(offset)
+    with open(modFilename, 'rb') as f:
+        modContents = f.read()
+        modSize = len(modContents)
+        backup = archive.read(modSize)
+        archive.seek(offset)
+        archive.write(modContents)
+    os.remove(modFilename)
+    print("Mod '{}' successfully uninstalled".format(modFilename))
 
 sys.argv = [""]  # workaround needed for runpy
 
@@ -49,7 +63,7 @@ TILED_DOUBLE = 1
 state = "file_manager"
 
 
-def run_python_module(mod: str):
+def run_python_module(mod: str, mode):
     # clear both buffers
     imguihelper.clear()
     imguihelper.clear()
@@ -67,11 +81,14 @@ def run_python_module(mod: str):
             if not _isValidHex(fileName):
                 print("Filename '{}' not valid hex number".format(fileName))
                 renderer.shutdown()
-            installMod(archive, mod)
+
+            if mode == 1:
+                installMod(archive, mod)
+            else:
+                uninstallMod(archive, mod)
             global state
             state = "installed"
     imguihelper.initialize()
-
     
 
 def main():
@@ -111,6 +128,7 @@ def main():
 
             dirs = []
             files = []
+            backups = []
             
             for e in os.listdir():
                 if os.path.isdir(e):
@@ -118,20 +136,29 @@ def main():
                 else:
                     if e.endswith(".prc"):
                         files.append(e)
+                    if e.endswith(".backup"):
+                        backups.append(e)
             
             dirs = sorted(dirs)
             files = sorted(files)
+            backups = sorted(backups)
                 
             for e in files:
                 if e.endswith(".prc"):
                     imgui.push_style_color(imgui.COLOR_BUTTON, *PYFILE_COLOR)
-                else:
-                    imgui.push_style_color(imgui.COLOR_BUTTON, *FILE_COLOR)
-
-                if imgui.button(e, width=400, height=60) and e.endswith(".prc"):
+                if imgui.button("Install "+e, width=400, height=60) and e.endswith(".prc"):
                     ctime = time.time()
-                    run_python_module(e)
-                
+                    run_python_module(e, 1)
+
+                imgui.pop_style_color(1)
+
+            for e in backups:
+                if e.endswith(".backup"):
+                    imgui.push_style_color(imgui.COLOR_BUTTON, *FOLDER_COLOR)
+                if imgui.button("Uninstall "+e, width=400, height=60) and e.endswith(".backup"):
+                    ctime = time.time()
+                    run_python_module(e, 2)
+
                 imgui.pop_style_color(1)
 
             
