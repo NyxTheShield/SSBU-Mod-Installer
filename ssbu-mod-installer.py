@@ -134,7 +134,7 @@ def main():
                 if os.path.isdir(e):
                     dirs.append(e)
                 else:
-                    if e.endswith(".prc"):
+                    if not e.endswith(".exe") and not e.endswith(".bat") and not e.endswith(".backup") and not e.endswith(".arc"):
                         files.append(e)
                     if e.endswith(".backup"):
                         backups.append(e)
@@ -144,9 +144,9 @@ def main():
             backups = sorted(backups)
                 
             for e in files:
-                if e.endswith(".prc"):
+                if not e.endswith(".exe") and not e.endswith(".bat") and not e.endswith(".backup") and not e.endswith(".arc"):
                     imgui.push_style_color(imgui.COLOR_BUTTON, *PYFILE_COLOR)
-                if imgui.button("Install "+e, width=400, height=60) and e.endswith(".prc"):
+                if imgui.button("Install "+e, width=400, height=60) and not e.endswith(".exe") and not e.endswith(".bat") and not e.endswith(".backup") and not e.endswith(".arc"):
                     ctime = time.time()
                     run_python_module(e, 1)
 
